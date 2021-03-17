@@ -8,7 +8,7 @@ int main() {
 
   for (int i = 1; i < 8; i++) {
     for (int j = 3; j < 7; j++) {
-      screen.at(i, j) = '*';
+      screen.at(i, j) = U'🍌';
     }
   }
 

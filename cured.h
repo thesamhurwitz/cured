@@ -17,6 +17,7 @@
 
 typedef char cured_char;
 typedef std::string cured_string;
+typedef std::stringstream cured_sstream;
 
 struct Size {
   uint8_t width;
@@ -59,7 +60,7 @@ enum class Color : uint8_t {
 };
 
 struct Char {
-  cured_char Character = ' ';
+  char32_t Character = ' ';
   bool Blink = false;
   bool Bold = false;
   bool Dim = false;
@@ -83,49 +84,50 @@ namespace Terminal {
 
 
   // Cursor
-  const cured_char* CURSOR_UP       = "\x1B[1A";
-  const cured_char* CURSOR_DOWN     = "\x1B[1B";
-  const cured_char* CURSOR_FORWARD  = "\x1B[1C";
-  const cured_char* CURSOR_BACK     = "\x1B[1D";
+  const cured_char* CURSOR_UP               = "\x1B[1A";
+  const cured_char* CURSOR_DOWN             = "\x1B[1B";
+  const cured_char* CURSOR_FORWARD          = "\x1B[1C";
+  const cured_char* CURSOR_BACK             = "\x1B[1D";
 
-  const cured_char* CARRIAGE_RETURN = "\r";
-  const cured_char* NEW_LINE        = "\n";
+  const cured_char* CARRIAGE_RETURN         = "\r";
+  const cured_char* NEW_LINE                = "\n";
 
-  const cured_char* ERASE_SCREEN    = "\x1B[2J"; // if 3, will erase scroll buffer
-  const cured_char* ERASE_LINE      = "\x1B[2K";
+  const cured_char* ERASE_SCREEN            = "\x1B[2J"; // if 3, will erase scroll buffer
+  const cured_char* ERASE_LINE              = "\x1B[2K";
 
-  const cured_char* CURSOR_SHOW     = "\x1B[25h";
-  const cured_char* CURSOR_HIDE     = "\x1B[25l";
+  const cured_char* CURSOR_SHOW             = "\x1B[25h";
+  const cured_char* CURSOR_HIDE             = "\x1B[25l";
 
-  const cured_char* AUTO_WRAP_SET   = "\x1B[?7h";
-  const cured_char* AUTO_WRAP_RESET = "\x1B[?7l";
+  const cured_char* AUTO_WRAP_SET           = "\x1B[?7h";
+  const cured_char* AUTO_WRAP_RESET         = "\x1B[?7l";
   
-  const cured_char* ALTERNATIVE_SCREEN = "\x1B[?1049h";
-  const cured_char* NORMAL_SCREEN   = "\x1B[?1049l";
+  const cured_char* ALTERNATIVE_SCREEN      = "\x1B[?1049h";
+  const cured_char* NORMAL_SCREEN           = "\x1B[?1049l";
 
   // Select Graphics Rendition
-  const cured_char* SGR_NORMAL = "\x1B[m";
+  const cured_char* SGR_NORMAL              = "\x1B[m";
 
-  const cured_char* SGR_BOLD_SET = "\x1B[1m";
-  const cured_char* SGR_BOLD_RESET = "\x1B[22m";
+  const cured_char* SGR_BOLD_SET            = "\x1B[1m";
+  const cured_char* SGR_BOLD_RESET          = "\x1B[22m";
 
-  const cured_char* SGR_DIM_SET = "\x1B[2m";
-  const cured_char* SGR_DIM_RESET = "\x1B[22m";
+  const cured_char* SGR_DIM_SET             = "\x1B[2m";
+  const cured_char* SGR_DIM_RESET           = "\x1B[22m";
 
-  const cured_char* SGR_UNDERLINED_SET = "\x1B[4m";
-  const cured_char* SGR_UNDERLINED_RESET = "\x1B[24m";
+  const cured_char* SGR_UNDERLINED_SET      = "\x1B[4m";
+  const cured_char* SGR_UNDERLINED_RESET    = "\x1B[24m";
 
-  const cured_char* SGR_BLINK_SET = "\x1B[5m";
-  const cured_char* SGR_BLINK_RESET = "\x1B[25m";
+  const cured_char* SGR_BLINK_SET           = "\x1B[5m";
+  const cured_char* SGR_BLINK_RESET         = "\x1B[25m";
 
-  const cured_char* SGR_INVERTED_SET = "\x1B[7m";
-  const cured_char* SGR_INVERTED_RESET = "\x1B[27m";
+  const cured_char* SGR_INVERTED_SET        = "\x1B[7m";
+  const cured_char* SGR_INVERTED_RESET      = "\x1B[27m";
 
   // TODO: add other styles like strike
 
 
   inline cured_string CURSOR_POSITION(int x, int y) {
     // TODO: fix this
+
     cured_string str = "\x1B[" + std::to_string(y + 1) + ";" + std::to_string(x + 1) + "H";
     return str;
   }
@@ -145,7 +147,7 @@ public:
   void Init();
   void Draw();
 
-  inline cured_char& at(int x, int y) {
+  inline char32_t& at(int x, int y) {
     return buffer[y * width + x].Character;
   }
 
@@ -159,8 +161,35 @@ private:
   int width, height;
 };
 
+std::string u32to8(char32_t);
+
 
 #ifdef CURED_IMPLEMENTATION
+
+std::string u32to8(char32_t c) {
+  char buffer[5];
+  char* end = const_cast<char*>(buffer);
+  if(c < 0x7F) *(end++) = static_cast<unsigned>(c);
+  else if(c < 0x7FF) {
+      *(end++) = 0b1100'0000 + static_cast<unsigned>(c >> 6);
+      *(end++) = 0b1000'0000 + static_cast<unsigned>(c & 0b0011'1111);
+  }
+  else if(c < 0x10000){
+      *(end++) = 0b1110'0000 + static_cast<unsigned>(c >> 12);
+      *(end++) = 0b1000'0000 + static_cast<unsigned>((c >> 6) & 0b0011'1111);
+      *(end++) = 0b1000'0000 + static_cast<unsigned>(c & 0b0011'1111);
+  } else if(c < 0x110000) {
+      *(end++) = 0b1111'0000 + static_cast<unsigned>(c >> 18);
+      *(end++) = 0b1000'0000 + static_cast<unsigned>((c >> 12) & 0b0011'1111);
+      *(end++) = 0b1000'0000 + static_cast<unsigned>((c >> 6) & 0b0011'1111);
+      *(end++) = 0b1000'0000 + static_cast<unsigned>(c & 0b0011'1111);
+  }
+  else {
+  }
+  *end = '\0';
+
+  return std::string(buffer, end - buffer);
+}
 
 // Term Info
 
@@ -239,7 +268,7 @@ void Screen::Init() {
 }
 
 void Screen::Draw() {
-  std::stringstream ss;
+  cured_sstream ss;
 
   ss << Terminal::CURSOR_POSITION(0, 0);
   ss << Terminal::ERASE_SCREEN; // TODO: test w/o
@@ -251,7 +280,7 @@ void Screen::Draw() {
 
     for (int x = 0; x < width; ++x) {
       auto& c = buffer[y * width + x];
-      ss << c.Character;
+      ss << u32to8(c.Character);
     }
   }
 
