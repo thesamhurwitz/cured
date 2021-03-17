@@ -1,6 +1,10 @@
 # Vscode
 .vscode/
 
+# Benchmark and profiling logs
+benchmark.json
+*.out.*
+
 # Prerequisites
 *.d
 
