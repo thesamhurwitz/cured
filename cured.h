@@ -132,6 +132,14 @@ namespace Terminal {
     return str;
   }
 
+  inline cured_string ANSI_FCOLOR(Color& color) {
+    return "\x1B[" + std::to_string((uint8_t)color) + "m";
+  }
+
+  inline cured_string ANSI_BCOLOR(Color& color) {
+    return "\x1B[" + std::to_string((uint8_t)color + 10) + "m";
+  }
+
   // TODO color conversions to ascii sequences
   // TODO set window title
 }
@@ -269,11 +277,11 @@ void SelectGraphicsRendition(std::stringstream& ss, Char& previous, Char& next) 
   if (next.Inverted != previous.Inverted)
     ss << (next.Inverted ? Terminal::SGR_INVERTED_SET : Terminal::SGR_INVERTED_RESET);
 
-  // if (next.ForegroundColor != previous.ForegroundColor ||
-  //     next.BackgroundColor != previous.BackgroundColor) {
-  //   ss << L"\x1B[" + next.foreground_color.Print(false) + L"m";
-  //   ss << L"\x1B[" + next.background_color.Print(true) + L"m";
-  // }
+  if (next.ForegroundColor != previous.ForegroundColor ||
+      next.BackgroundColor != previous.BackgroundColor) {
+        ss << Terminal::ANSI_FCOLOR(next.ForegroundColor);
+        ss << Terminal::ANSI_BCOLOR(next.BackgroundColor);
+  }
 
   previous = next;
 }
