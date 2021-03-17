@@ -139,6 +139,9 @@ namespace Terminal {
 
 class Screen {
 public:
+  Screen();
+  ~Screen();
+
   void Init();
   void Draw();
 
@@ -214,6 +217,14 @@ void Terminal::restore() {
 }
 
 // Screen
+
+Screen::Screen() {
+  Init();
+}
+
+Screen::~Screen() {
+  delete[] buffer;
+}
 
 void Screen::Init() {
   Terminal::init();
