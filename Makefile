@@ -1,11 +1,11 @@
 INCLUDES = -I.
 CC = g++
 RM = rm
-CPPFLAGS = -Wall -std=c++0x
+CPPFLAGS = -Wall -std=c++17
 
 .PHONY: all main clean 
 
-all: main examples
+all: main examples benchmarks
 
 # Sandbox
 main: main.out
@@ -20,6 +20,14 @@ examples: $(EXAMPLES)
 
 $(EXAMPLES): %.out : examples/%.cpp
 	$(CC) $(INCLUDES) $(CPPFLAGS) -o $@ $^
+
+# Benchmark
+BENCHMARKS = $(patsubst benchmarks/%.cpp,%.out,$(wildcard benchmarks/*.cpp))
+
+benchmarks: $(BENCHMARKS)
+
+$(BENCHMARKS): %.out : benchmarks/%.cpp cured.h
+	$(CC) $(INCLUDES) $(CPPFLAGS) -o $@ $^ -lbenchmark
 
 clean:
 	$(RM) *.out
