@@ -245,6 +245,31 @@ void Terminal::restore() {
   std::cout << std::flush;
 }
 
+void SelectGraphicsRendition(std::stringstream& ss, Char& previous, Char& next) {
+  if (next.Bold != previous.Bold)
+    ss << (next.Bold ? Terminal::SGR_BOLD_SET : Terminal::SGR_BOLD_RESET);
+
+  if (next.Dim != previous.Dim)
+    ss << (next.Dim ? Terminal::SGR_DIM_SET : Terminal::SGR_DIM_RESET);
+
+  if (next.Underlined != previous.Underlined)
+    ss << (next.Underlined ? Terminal::SGR_UNDERLINED_SET : Terminal::SGR_UNDERLINED_RESET);
+
+  if (next.Blink != previous.Blink)
+    ss << (next.Blink ? Terminal::SGR_BLINK_SET : Terminal::SGR_BLINK_RESET);
+
+  if (next.Inverted != previous.Inverted)
+    ss << (next.Inverted ? Terminal::SGR_INVERTED_SET : Terminal::SGR_INVERTED_RESET);
+
+  // if (next.ForegroundColor != previous.ForegroundColor ||
+  //     next.BackgroundColor != previous.BackgroundColor) {
+  //   ss << L"\x1B[" + next.foreground_color.Print(false) + L"m";
+  //   ss << L"\x1B[" + next.background_color.Print(true) + L"m";
+  // }
+
+  previous = next;
+}
+
 // Screen
 
 Screen::Screen() {
@@ -273,6 +298,8 @@ void Screen::Draw() {
   ss << Terminal::CURSOR_POSITION(0, 0);
   ss << Terminal::ERASE_SCREEN; // TODO: test w/o
 
+  Char prevChar;
+
   for (int y = 0; y < height; ++y) {
     if (y != 0) {
       ss << Terminal::NEW_LINE << Terminal::CARRIAGE_RETURN;
@@ -280,16 +307,18 @@ void Screen::Draw() {
 
     for (int x = 0; x < width; ++x) {
       auto& c = buffer[y * width + x];
+
+      SelectGraphicsRendition(ss, prevChar, c);
+
       ss << u32to8(c.Character);
     }
   }
 
+  Char dummy;
+  SelectGraphicsRendition(ss, prevChar, dummy);
+
   std::cout << ss.str();
   std::cout << std::flush;
-}
-
-void UpdateCharacterStyle() {
-
 }
 
 #endif // CURED_IMPLEMENTATION
